@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 
 TOKEN = '5362034738:AAGFJgDIRBDn4RyUwzZecugQF2kgzC_0NuQ'
 
-
+last_count = 0
 def start(update, context):
     update.message.reply_text(
-        '"Бот-библиотекарь" ver. 1.0.\n'
+        'Я бот-библиотекарь ver. 1.0.\n'
         'Умею создавать карточку ученика и редактировать её.\n'
         'Для получения доступных команд наберите /help')
 
@@ -94,7 +94,8 @@ def info(update, context):
 
 
 def redactor(update, context):
-    update.message.reply_text("Пока в разработке")
+    update.message.reply_text(
+        "Укажите полностью ")
 
 
 def help(update, context):
