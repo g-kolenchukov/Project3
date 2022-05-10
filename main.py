@@ -155,15 +155,19 @@ def redactor(update, context):
         for index, row in enumerate(reader):
             i = int(row[0])
             if int(update.message['chat']['id']) == i:
-                global number
-                number = row[1]
+                global NUM
+                NUM = row[1]
     update.message.reply_text(
         "Для редактирования карточки введите её номер")
     return 1
 
 
 def redactor2(update, context):
-    number = update.message.text
+    if NUM:
+        number = NUM
+    else:
+        number = update.message.text
+    print(number)
     try:
         number = int(number)
         con = sqlite3.connect("cards_bd.sqlite")
@@ -174,17 +178,22 @@ def redactor2(update, context):
         print(result)
         update.message.reply_text(
             f'Номер: {result[0][0]}\nФамилия: {result[0][1]}\nИмя: {result[0][2]}\nПараллель: {result[0][3]}\nКласс: {result[0][4]}')
-        if result[0][5] == None:
+        update.message.reply_text(
+            'Введите полностью правильную информацию в вашу карточку по образцу\n'
+            'ФАМИЛИЯ ИМЯ НОМЕР_ПАРРАЛЕЛИ БУКВА_КЛАССА')
+        carda = update.message.text
+        carda.split(' ')
+        try:
+            con = sqlite3.connect("cards_bd.sqlite")
+            cur = con.cursor()
+            que = cur.execute(f"""UPDATE cods SET (familiya, imya, parallel, klass) = {carda[0]}, {carda[1]}, {carda[2]}, {carda[3]} WHERE number = {number}""")
+            cur.execute(que)
+            con.commit()
+            con.close()
+        except:
             update.message.reply_text(
-                f'Взятых книг у вас пока нет, но вы можете это исправить:)')
-        else:
-            msg = ''
-            sp = result[0][5].split(';')
-            print(sp)
-            msg += 'Взятые вами книги:\n'
-            for i in range(len(sp)):
-                msg += (f'{i + 1}. {sp[i]}\n')
-            update.message.reply_text(f'{msg}')
+                'Введите полностью правильную информацию в вашу карточку по образцу\n'
+                'ФАМИЛИЯ ИМЯ НОМЕР_ПАРРАЛЕЛИ БУКВА_КЛАССА')
     except:
         update.message.reply_text('Нужно ввести номер карточки числом без букв и пробелов')
     return ConversationHandler.END

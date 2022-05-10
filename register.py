@@ -46,7 +46,7 @@ def second_response(update, context):
     f = open("knigi.txt", 'w')
     f.write(str(count))
     f.close()
-    with open('files/квадраты.csv', 'w', newline='') as csvfile:
+    with open('ids.csv', 'w', newline='') as csvfile:
         writer = csv.writer(
             csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         writer.writerow([update.message['chat']['id'], count])
