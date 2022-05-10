@@ -88,6 +88,33 @@ def get3(update, context):
 
 
 def info(update, context):
+    with open('ids.csv', encoding="utf8") as csvfile:
+        reader = csv.reader(csvfile, delimiter=';', quotechar='"')
+        for index, row in enumerate(reader):
+            i = int(row[0])
+            if int(update.message['chat']['id']) == i:
+                global number
+                number = row[1]
+                con = sqlite3.connect("cards_bd.sqlite")
+                cur = con.cursor()
+                result = cur.execute(f"""SELECT * FROM cods
+                                    WHERE number = {number}""").fetchall()
+                con.close()
+                print(result)
+                update.message.reply_text(
+                    f'Номер: {result[0][0]}\nФамилия: {result[0][1]}\nИмя: {result[0][2]}\nПараллель: {result[0][3]}\nКласс: {result[0][4]}')
+                if result[0][5] == None:
+                    update.message.reply_text(
+                        f'Взятых книг у вас пока нет, но вы можете это исправить:)')
+                else:
+                    msg = ''
+                    sp = result[0][5].split(';')
+                    print(sp)
+                    msg += 'Взятые вами книги:\n'
+                    for i in range(len(sp)):
+                        msg += (f'{i + 1}. {sp[i]}\n')
+                    update.message.reply_text(f'{msg}')
+            return ConversationHandler.END
     update.message.reply_text(
         "Для получения информации о карточке введите свой номер\n"
         'Он был дан вам при регистрации')
@@ -123,6 +150,13 @@ def info2(update, context):
 
 
 def redactor(update, context):
+    with open('ids.csv', encoding="utf8") as csvfile:
+        reader = csv.reader(csvfile, delimiter=';', quotechar='"')
+        for index, row in enumerate(reader):
+            i = int(row[0])
+            if int(update.message['chat']['id']) == i:
+                global number
+                number = row[1]
     update.message.reply_text(
         "Для редактирования карточки введите её номер")
     return 1
