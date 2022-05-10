@@ -150,24 +150,14 @@ def info2(update, context):
 
 
 def redactor(update, context):
-    with open('ids.csv', encoding="utf8") as csvfile:
-        reader = csv.reader(csvfile, delimiter=';', quotechar='"')
-        for index, row in enumerate(reader):
-            i = int(row[0])
-            if int(update.message['chat']['id']) == i:
-                global NUM
-                NUM = row[1]
     update.message.reply_text(
         "Для редактирования карточки введите её номер")
     return 1
 
 
 def redactor2(update, context):
-    if NUM:
-        number = NUM
-    else:
-        number = update.message.text
-    print(number)
+    global number
+    number = update.message.text
     try:
         number = int(number)
         con = sqlite3.connect("cards_bd.sqlite")
@@ -181,22 +171,25 @@ def redactor2(update, context):
         update.message.reply_text(
             'Введите полностью правильную информацию в вашу карточку по образцу\n'
             'ФАМИЛИЯ ИМЯ НОМЕР_ПАРРАЛЕЛИ БУКВА_КЛАССА')
-        carda = update.message.text
-        carda.split(' ')
-        try:
-            con = sqlite3.connect("cards_bd.sqlite")
-            cur = con.cursor()
-            que = cur.execute(f"""UPDATE cods SET (familiya, imya, parallel, klass) = {carda[0]}, {carda[1]}, {carda[2]}, {carda[3]} WHERE number = {number}""")
-            cur.execute(que)
-            con.commit()
-            con.close()
-        except:
-            update.message.reply_text(
-                'Введите полностью правильную информацию в вашу карточку по образцу\n'
-                'ФАМИЛИЯ ИМЯ НОМЕР_ПАРРАЛЕЛИ БУКВА_КЛАССА')
     except:
         update.message.reply_text('Нужно ввести номер карточки числом без букв и пробелов')
+    return 2
+
+
+def redactor3(update, context):
+    carda = update.message.text
+    carda = carda.split(' ')
+    print(carda)
+    con = sqlite3.connect("cards_bd.sqlite")
+    cur = con.cursor()
+    que = f"""UPDATE cods SET (familiya, imya, parallel, klass) = ('{carda[0]}', '{carda[1]}', {int(carda[2])}, '{carda[3]}') WHERE number = {number}"""
+    cur.execute(que)
+    con.commit()
+    con.close()
+    update.message.reply_text(
+            'Карточка успешно отредактирована')
     return ConversationHandler.END
+
 
 def help(update, context):
     update.message.reply_text(
@@ -211,7 +204,6 @@ def main():
     dp = updater.dispatcher
     obych = MessageHandler(Filters.text & ~Filters.command, help)
     th_start = CommandHandler('start', start)
-    th_redactor = CommandHandler('redactor', redactor)
     th_help = CommandHandler('help', help)
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('register', register)],
@@ -239,7 +231,8 @@ def main():
     conv_handler4 = ConversationHandler(
         entry_points=[CommandHandler('redactor', redactor)],
         states={
-            1: [MessageHandler(Filters.text & ~Filters.command, redactor2)]
+            1: [MessageHandler(Filters.text & ~Filters.command, redactor2)],
+            2: [MessageHandler(Filters.text & ~Filters.command, redactor3)]
         },
         fallbacks=[CommandHandler('stop', stop)]
     )
@@ -249,7 +242,6 @@ def main():
     dp.add_handler(conv_handler)
     dp.add_handler(obych)
     dp.add_handler(th_start)
-    dp.add_handler(th_redactor)
     dp.add_handler(th_help)
     updater.start_polling()
     updater.idle()
