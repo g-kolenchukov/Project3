@@ -19,7 +19,7 @@ def start(update, context):
 
 def register(update, context):
     update.message.reply_text(
-        "Для регистрации карточки ученика введите имя и фамилию.\n"
+        "Для регистрации карточки ученика введите фамилию и имя.\n"
         "Вы можете прервать регистрацию, послав команду /stop.")
     return 1
 
@@ -29,7 +29,7 @@ def first_response(update, context):
     imya_familiya = update.message.text
     sp = imya_familiya.split(' ')
     if len(sp) < 2:
-        update.message.reply_text('Введи имя и фамилию через пробел')
+        update.message.reply_text('Введи фамилию и имя через пробел')
     else:
         for i in range(len(sp)):
             sp[i] = sp[i].capitalize()
@@ -71,8 +71,15 @@ def second_response(update, context):
         cur = con.cursor()
         zapros_bd = """INSERT INTO cods(number,imya,familiya,parallel,klass) """
         zapros_bd += """VALUES("""
-        zapros_bd += """, """.join([f"'{sp[2]}'", f"'{sp[0]}'", f"'{sp[1]}'", f"'{sp[3]}'", f"'{sp[4]}'"])
+        zapros_bd += """, """.join([f"'{sp[2]}'", f"'{sp[1]}'", f"'{sp[0]}'", f"'{sp[3]}'", f"'{sp[4]}'"])
         zapros_bd += """)"""
+        number = sp[2]
+        context.user_data['number'] = number
+        zapros_2 = """INSERT INTO context(number, context)"""
+        zapros_2 += """VALUES("""
+        zapros_2 += """, """.join([str(number), context.user_data])
+        zapros_2 += """)"""
+        cur.execute(zapros_2)
         cur.execute(zapros_bd)
         con.commit()
         con.close()
@@ -117,16 +124,30 @@ def info(update, context):
 
 def info2(update, context):
     number = update.message.text
-    con = sqlite3.connect("cards_bd.sqlite")
-    cur = con.cursor()
-    result = cur.execute(f"""SELECT * FROM cods
-                WHERE number = {number}""").fetchall()
-    con.close()
-    print(result)
-    update.message.reply_text(
-        f'Номер: {result[0][0]}, Фамилия: {result[0][1]}, Имя: {result[0][2]}, Параллель: {result[0][3]}, Класс: {result[0][4]}')
-    update.message.reply_text(
-        f'Взятые книги: {result[0][5]}')
+    try:
+        number = int(number)
+        con = sqlite3.connect("cards_bd.sqlite")
+        cur = con.cursor()
+        result = cur.execute(f"""SELECT * FROM cods
+                    WHERE number = {number}""").fetchall()
+        con.close()
+        print(result)
+        update.message.reply_text(
+            f'Номер: {result[0][0]}\nФамилия: {result[0][1]}\nИмя: {result[0][2]}\nПараллель: {result[0][3]}\nКласс: {result[0][4]}')
+        if result[0][5] == None:
+            update.message.reply_text(
+            f'Взятых книг у вас пока нет, но вы можете это исправить:)')
+        else:
+            msg = ''
+            sp = result[0][5].split(';')
+            print(sp)
+            msg += 'Взятые вами книги:\n'
+            for i in range(len(sp)):
+                msg += (f'{i + 1}. {sp[i]}\n')
+            update.message.reply_text(f'{msg}')
+    except:
+        update.message.reply_text('Нужно ввести номер карточки числом без букв и пробелов')
+    return ConversationHandler.END
 
 
 def redactor(update, context):
@@ -161,9 +182,9 @@ def main():
         # Состояние внутри диалога. Вариант с двумя обработчиками, фильтрующими текстовые сообщения.
         states={
             # Функция читает ответ на первый вопрос и задаёт второй.
-            1: [MessageHandler(Filters.text & ~Filters.command, first_response)],
+            1: [MessageHandler(Filters.text & ~Filters.command, first_response, pass_user_data=True)],
             # Функция читает ответ на второй вопрос и завершает диалог.
-            2: [MessageHandler(Filters.text & ~Filters.command, second_response)]
+            2: [MessageHandler(Filters.text & ~Filters.command, second_response, pass_user_data=True)]
         },
         # Точка прерывания диалога. В данном случае — команда /stop.
         fallbacks=[CommandHandler('stop', stop)]
@@ -178,7 +199,7 @@ def main():
     conv_handler3 = ConversationHandler(
         entry_points=[CommandHandler('info', info)],
         states={
-            1: [MessageHandler(Filters.text & ~Filters.command, info2)]
+            1: [MessageHandler(Filters.text & ~Filters.command, info2, pass_user_data=True)]
         },
         fallbacks=[CommandHandler('stop', stop)]
     )
