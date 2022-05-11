@@ -58,6 +58,7 @@ def get3(update, context):
         con2 = sqlite3.connect("cards_bd.sqlite")
         cur = con2.cursor()
         result2 = cur.execute(f"""SELECT * FROM knigi WHERE nazvanie = '{kniga}'""").fetchall()
+        print(result2)
         con2.close()
         if result2 == []:
             update.message.reply_text(
@@ -67,9 +68,22 @@ def get3(update, context):
             cur = con.cursor()
             ms = cur.execute(f"""SELECT knigi FROM cods
                                 WHERE number = {number}""").fetchall()[0][0]
-            ms = ms.split(';')
-            if result2[0][0] in ms:
-                update.message.reply_text('Такая книга уже была вам выдана')
+            if ms != None:
+                ms = ms.split(';')
+                if result2[0][0] in ms:
+                    update.message.reply_text('Такая книга уже была вам выдана')
+                else:
+                    msg = ''
+                    msg += 'На вас оформлена книга:\n'
+                    msg += result2[0][0]
+                    msg += f', автор: {result2[0][1]}'
+                    update.message.reply_text(f'{msg}')
+                    ms.append(result2[0][0])
+                    ms = ';'.join(ms)
+                    uqe = f"""UPDATE cods SET knigi = '{ms}' WHERE number = {number}"""
+                    cur.execute(uqe)
+                    con.commit()
+                    con.close()
             else:
                 msg = ''
                 msg += 'На вас оформлена книга:\n'
@@ -93,12 +107,13 @@ def info(update, context):
         for index, row in enumerate(reader):
             i = int(row[0])
             if int(update.message['chat']['id']) == i:
-                global number
-                number = row[1]
+                global Number
+                Number = row[1]
+                print(Number)
                 con = sqlite3.connect("cards_bd.sqlite")
                 cur = con.cursor()
                 result = cur.execute(f"""SELECT * FROM cods
-                                    WHERE number = {number}""").fetchall()
+                                    WHERE number = {Number}""").fetchall()
                 con.close()
                 print(result)
                 update.message.reply_text(
